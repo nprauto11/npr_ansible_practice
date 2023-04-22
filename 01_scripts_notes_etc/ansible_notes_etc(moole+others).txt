@@ -1,0 +1,395 @@
+
+
+Ref: https://www.golinuxcloud.com/ansible-ad-hoc-commands/
+     https://docs.ansible.com/ansible/latest/command_guide/intro_adhoc.html
+	 https://www.tutorialspoint.com/ansible/ansible_quick_guide.htm
+	 
+
+(1)ansible default inventory file --> /etc/ansible/hosts
+ # ex:-
+   $ cat /etc/ansible/hosts
+   [web]
+   172.31.7.58
+   
+   [app]
+   172.31.15.87
+   
+   [db]
+   172.31.13.178
+   
+   
+   
+(2) ansible ad-hoc commands :-
+   =======================
+ # to ping the all ansible hosts. will get result as pong 
+   $ ansible all -m ping
+ 
+ # to execute commands on remote machines
+   $ ansible db -a "uptime" 
+   $ ansible app -m shell -a "uptime"
+   $ ansible all -m shell -a "w"
+      
+ # to copy file from control machine to remote machine 
+   $ ansible app -m copy -a "src=/tmp/utilities/installDocker.sh dest=/root/installDocker.sh"
+   $ ansible db -m ansible.builtin.copy -a "src=/tmp/utilities/installDocker.sh dest=/home/ubuntu/installDocker.sh"
+ 
+ # to copy file from control machine to remote machine 
+   $ ansible app -m copy -a "src=/tmp/utilities/installDocker.sh dest=/root/installDocker.sh"
+   $ ansible db -m ansible.builtin.copy -a "src=/tmp/utilities/installDocker.sh dest=/home/ubuntu/installDocker.sh"
+   
+
+   
+ # file module to create/allows changing ownership and permissions on file/directory
+   (value of state must be one of: absent, directory, file, hard, link, touch, got: present)
+   $ ansible db -m file -a "dest=/home/ubuntu/a.txt state=touch"
+   $ ansible db -m ansible.builtin.file -a "dest=/home/ubuntu/a.txt mode=600 owner=ubuntu group=ubuntu"
+   $ ansible app -m file -a "dest=/home/ubuntu/new state=directory"
+   $ ansible db -m file -a "dest=/home/ubuntu/a.txt state=absent"
+  
+ # managing packages  (present/absent/latest)
+   # To ensure a specific version of a package is installed:
+     $ ansible app -m apt -a "name=tree state=present"
+   
+   # To ensure a package is at the latest version:
+    # with below command, it will update to latest version, because its already installed
+    $ ansible app -m apt -a "name=tree state=latest"
+   
+    # with below command, it will install to latest version, because its not installed previously 
+    $ ansible db -m apt -a "name=tree state=latest"
+
+   # To ensure a package is not installed:
+	# with below command, it will uninstalled, because its already installed
+	$ ansible app -m apt -a "name=tree state=absent"
+   
+   
+   
+  
+Practical steps:
+---------------
+
+ # root@master:~# ansible all -m ping
+   172.31.7.58 | SUCCESS => {
+       "ansible_facts": {
+           "discovered_interpreter_python": "/usr/bin/python3"
+       },
+       "changed": false,
+       "ping": "pong"
+   }
+   172.31.13.178 | SUCCESS => {
+       "ansible_facts": {
+           "discovered_interpreter_python": "/usr/bin/python3"
+       },
+       "changed": false,
+       "ping": "pong"
+   }
+   172.31.15.87 | SUCCESS => {
+       "ansible_facts": {
+           "discovered_interpreter_python": "/usr/bin/python3"
+       },
+       "changed": false,
+       "ping": "pong"
+   }
+   
+   
+   
+ # root@master:~# ansible db -a "uptime"
+   172.31.13.178 | CHANGED | rc=0 >>
+    13:48:58 up  1:53,  2 users,  load average: 0.10, 0.32, 0.32
+	
+ # root@master:~# ansible app -m shell -a "uptime"
+   172.31.15.87 | CHANGED | rc=0 >>
+    14:01:53 up 1 min,  2 users,  load average: 2.04, 1.04, 0.40
+	
+ # root@master:~# ansible all -m shell -a "w"
+   172.31.7.58 | CHANGED | rc=0 >>
+    14:04:07 up  2:08,  3 users,  load average: 0.35, 0.31, 0.33
+   USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+   ubuntu   pts/2    49.37.135.11     13:42   20:20   0.04s  0.01s sshd: ubuntu [priv]                                                      
+   root     pts/1    172.31.7.58      14:04    0.00s  0.15s  0.00s w
+   ubuntu   pts/3    49.37.135.11     13:43    7.00s  0.98s  0.02s sudo su -
+   172.31.15.87 | CHANGED | rc=0 >>
+    14:04:07 up 4 min,  2 users,  load average: 0.23, 0.68, 0.35
+   USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+   ubuntu   pts/0    49.37.135.11     14:00    3:19   0.04s  0.04s -bash
+   root     pts/1    172.31.7.58      14:04    0.00s  0.12s  0.00s /bin/sh -c w
+   172.31.13.178 | CHANGED | rc=0 >>
+    14:04:07 up  2:08,  2 users,  load average: 0.04, 0.07, 0.15
+   USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
+   root     pts/1    172.31.7.58      14:04    0.00s  0.16s  0.00s /bin/sh -c w
+   ubuntu   pts/0    49.37.135.11     13:48   15:50   0.01s  0.01s -bash
+ 
+ 
+ # root@master:~# ansible app -m copy -a "src=/tmp/utilities/installDocker.sh dest=/root/installDocker.sh"
+   172.31.15.87 | CHANGED => {
+       "ansible_facts": {
+           "discovered_interpreter_python": "/usr/bin/python3"
+       },
+       "changed": true,
+       "checksum": "d104bee69bc2639b20e4cb458926359d401d3b16",
+       "dest": "/root/installDocker.sh",
+       "gid": 0,
+       "group": "root",
+       "md5sum": "6af8873dbb55eed14cbe5a270c373cda",
+       "mode": "0644",
+       "owner": "root",
+       "size": 3399,
+       "src": "/root/.ansible/tmp/ansible-tmp-1682172653.4218931-179001-257589805444731/source",
+       "state": "file",
+       "uid": 0
+   }
+   
+   
+ # root@master:~# ansible db -m ansible.builtin.copy -a "src=/tmp/utilities/installDocker.sh dest=/home/ubuntu/installDocker.sh"
+   172.31.13.178 | CHANGED => {
+       "ansible_facts": {
+           "discovered_interpreter_python": "/usr/bin/python3"
+       },
+       "changed": true,
+       "checksum": "d104bee69bc2639b20e4cb458926359d401d3b16",
+       "dest": "/home/ubuntu/installDocker.sh",
+       "gid": 0,
+       "group": "root",
+       "md5sum": "6af8873dbb55eed14cbe5a270c373cda",
+       "mode": "0644",
+       "owner": "root",
+       "size": 3399,
+       "src": "/root/.ansible/tmp/ansible-tmp-1682172852.6034768-183234-62888876015250/source",
+       "state": "file",
+       "uid": 0
+   }
+
+
+ # root@master:~# ansible db -m file -a "dest=/home/ubuntu/a.txt state=touch"
+   172.31.13.178 | CHANGED => {
+       "ansible_facts": {
+           "discovered_interpreter_python": "/usr/bin/python3"
+       },
+       "changed": true,
+       "dest": "/home/ubuntu/a.txt",
+       "gid": 0,
+       "group": "root",
+       "mode": "0644",
+       "owner": "root",
+       "size": 0,
+       "state": "file",
+       "uid": 0
+   }
+   
+   
+   root@master:~# ansible db -m ansible.builtin.file -a "dest=/home/ubuntu/a.txt mode=600 owner=ubuntu group=ubuntu"
+   172.31.13.178 | CHANGED => {
+       "ansible_facts": {
+           "discovered_interpreter_python": "/usr/bin/python3"
+       },
+       "changed": true,
+       "gid": 1000,
+       "group": "ubuntu",
+       "mode": "0600",
+       "owner": "ubuntu",
+       "path": "/home/ubuntu/a.txt",
+       "size": 0,
+       "state": "file",
+       "uid": 1000
+   
+   root@master:~# ansible app -m file -a "dest=/home/ubuntu/new state=directory"
+   172.31.15.87 | CHANGED => {
+       "ansible_facts": {
+           "discovered_interpreter_python": "/usr/bin/python3"
+       },
+       "changed": true,
+       "gid": 0,
+       "group": "root",
+       "mode": "0755",
+       "owner": "root",
+       "path": "/home/ubuntu/new",
+       "size": 4096,
+       "state": "directory",
+       "uid": 0
+   }
+   
+   
+   root@master:~# ansible db -m file -a "dest=/home/ubuntu/a.txt state=absent"
+   172.31.13.178 | CHANGED => {
+       "ansible_facts": {
+           "discovered_interpreter_python": "/usr/bin/python3"
+       },
+       "changed": true,
+       "path": "/home/ubuntu/a.txt",
+       "state": "absent"
+   }
+
+
+  #root@master:~# ansible app -m apt -a "name=tree state=present"
+   172.31.15.87 | CHANGED => {
+       "ansible_facts": {
+           "discovered_interpreter_python": "/usr/bin/python3"
+       },
+       "cache_update_time": 1682164783,
+       "cache_updated": false,
+       "changed": true,
+       "stderr": "",
+       "stderr_lines": [],
+       "stdout": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  tree\n0 upgraded, 1 newly installed, 0 to remove and 32 not upgraded.\nNeed to get 47.9 kB of archives.\nAfter this operation, 116 kB of additional disk space will be used.\nGet:1 http://us-east-1.ec2.archive.ubuntu.com/ubuntu jammy/universe amd64 tree amd64 2.0.2-1 [47.9 kB]\nFetched 47.9 kB in 0s (3319 kB/s)\nSelecting previously unselected package tree.\r\n(Reading database ... \r(Reading database ... 5%\r(Reading database ... 10%\r(Reading database ... 15%\r(Reading database ... 20%\r(Reading database ... 25%\r(Reading database ... 30%\r(Reading database ... 35%\r(Reading database ... 40%\r(Reading database ... 45%\r(Reading database ... 50%\r(Reading database ... 55%\r(Reading database ... 60%\r(Reading database ... 65%\r(Reading database ... 70%\r(Reading database ... 75%\r(Reading database ... 80%\r(Reading database ... 85%\r(Reading database ... 90%\r(Reading database ... 95%\r(Reading database ... 100%\r(Reading database ... 104961 files and directories currently installed.)\r\nPreparing to unpack .../tree_2.0.2-1_amd64.deb ...\r\nUnpacking tree (2.0.2-1) ...\r\nSetting up tree (2.0.2-1) ...\r\nProcessing triggers for man-db (2.10.2-1) ...\r\nNEEDRESTART-VER: 3.5\nNEEDRESTART-KCUR: 5.15.0-1031-aws\nNEEDRESTART-KEXP: 5.15.0-1031-aws\nNEEDRESTART-KSTA: 1\n",
+       "stdout_lines": [
+           "Reading package lists...",
+           "Building dependency tree...",
+           "Reading state information...",
+           "The following NEW packages will be installed:",
+           "  tree",
+           "0 upgraded, 1 newly installed, 0 to remove and 32 not upgraded.",
+           "Need to get 47.9 kB of archives.",
+           "After this operation, 116 kB of additional disk space will be used.",
+           "Get:1 http://us-east-1.ec2.archive.ubuntu.com/ubuntu jammy/universe amd64 tree amd64 2.0.2-1 [47.9 kB]",
+           "Fetched 47.9 kB in 0s (3319 kB/s)",
+           "Selecting previously unselected package tree.",
+           "(Reading database ... ",
+           "(Reading database ... 5%",
+           "(Reading database ... 10%",
+           "(Reading database ... 15%",
+           "(Reading database ... 20%",
+           "(Reading database ... 25%",
+           "(Reading database ... 30%",
+           "(Reading database ... 35%",
+           "(Reading database ... 40%",
+           "(Reading database ... 45%",
+           "(Reading database ... 50%",
+           "(Reading database ... 55%",
+           "(Reading database ... 60%",
+           "(Reading database ... 65%",
+           "(Reading database ... 70%",
+           "(Reading database ... 75%",
+           "(Reading database ... 80%",
+           "(Reading database ... 85%",
+           "(Reading database ... 90%",
+           "(Reading database ... 95%",
+           "(Reading database ... 100%",
+           "(Reading database ... 104961 files and directories currently installed.)",
+           "Preparing to unpack .../tree_2.0.2-1_amd64.deb ...",
+           "Unpacking tree (2.0.2-1) ...",
+           "Setting up tree (2.0.2-1) ...",
+           "Processing triggers for man-db (2.10.2-1) ...",
+           "NEEDRESTART-VER: 3.5",
+           "NEEDRESTART-KCUR: 5.15.0-1031-aws",
+           "NEEDRESTART-KEXP: 5.15.0-1031-aws",
+           "NEEDRESTART-KSTA: 1"
+       ]
+   }
+    
+ 
+  # root@master:~# ansible app -m apt -a "name=tree state=latest"
+    172.31.15.87 | SUCCESS => {
+        "ansible_facts": {
+            "discovered_interpreter_python": "/usr/bin/python3"
+        },
+        "cache_update_time": 1682164783,
+        "cache_updated": false,
+        "changed": false
+    }
+    
+    
+    root@master:~# ansible db -m apt -a "name=tree state=latest"
+    172.31.13.178 | CHANGED => {
+        "ansible_facts": {
+            "discovered_interpreter_python": "/usr/bin/python3"
+        },
+        "cache_update_time": 1682164784,
+        "cache_updated": false,
+        "changed": true,
+        "stderr": "",
+        "stderr_lines": [],
+        "stdout": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following NEW packages will be installed:\n  tree\n0 upgraded, 1 newly installed, 0 to remove and 32 not upgraded.\nNeed to get 47.9 kB of archives.\nAfter this operation, 116 kB of additional disk space will be used.\nGet:1 http://us-east-1.ec2.archive.ubuntu.com/ubuntu jammy/universe amd64 tree amd64 2.0.2-1 [47.9 kB]\nFetched 47.9 kB in 0s (3552 kB/s)\nSelecting previously unselected package tree.\r\n(Reading database ... \r(Reading database ... 5%\r(Reading database ... 10%\r(Reading database ... 15%\r(Reading database ... 20%\r(Reading database ... 25%\r(Reading database ... 30%\r(Reading database ... 35%\r(Reading database ... 40%\r(Reading database ... 45%\r(Reading database ... 50%\r(Reading database ... 55%\r(Reading database ... 60%\r(Reading database ... 65%\r(Reading database ... 70%\r(Reading database ... 75%\r(Reading database ... 80%\r(Reading database ... 85%\r(Reading database ... 90%\r(Reading database ... 95%\r(Reading database ... 100%\r(Reading database ... 104961 files and directories currently installed.)\r\nPreparing to unpack .../tree_2.0.2-1_amd64.deb ...\r\nUnpacking tree (2.0.2-1) ...\r\nSetting up tree (2.0.2-1) ...\r\nProcessing triggers for man-db (2.10.2-1) ...\r\nNEEDRESTART-VER: 3.5\nNEEDRESTART-KCUR: 5.15.0-1031-aws\nNEEDRESTART-KEXP: 5.15.0-1031-aws\nNEEDRESTART-KSTA: 1\n",
+        "stdout_lines": [
+            "Reading package lists...",
+            "Building dependency tree...",
+            "Reading state information...",
+            "The following NEW packages will be installed:",
+            "  tree",
+            "0 upgraded, 1 newly installed, 0 to remove and 32 not upgraded.",
+            "Need to get 47.9 kB of archives.",
+            "After this operation, 116 kB of additional disk space will be used.",
+            "Get:1 http://us-east-1.ec2.archive.ubuntu.com/ubuntu jammy/universe amd64 tree amd64 2.0.2-1 [47.9 kB]",
+            "Fetched 47.9 kB in 0s (3552 kB/s)",
+            "Selecting previously unselected package tree.",
+            "(Reading database ... ",
+            "(Reading database ... 5%",
+            "(Reading database ... 10%",
+            "(Reading database ... 15%",
+            "(Reading database ... 20%",
+            "(Reading database ... 25%",
+            "(Reading database ... 30%",
+            "(Reading database ... 35%",
+            "(Reading database ... 40%",
+            "(Reading database ... 45%",
+            "(Reading database ... 50%",
+            "(Reading database ... 55%",
+            "(Reading database ... 60%",
+            "(Reading database ... 65%",
+            "(Reading database ... 70%",
+            "(Reading database ... 75%",
+            "(Reading database ... 80%",
+            "(Reading database ... 85%",
+            "(Reading database ... 90%",
+            "(Reading database ... 95%",
+            "(Reading database ... 100%",
+            "(Reading database ... 104961 files and directories currently installed.)",
+            "Preparing to unpack .../tree_2.0.2-1_amd64.deb ...",
+            "Unpacking tree (2.0.2-1) ...",
+            "Setting up tree (2.0.2-1) ...",
+            "Processing triggers for man-db (2.10.2-1) ...",
+            "NEEDRESTART-VER: 3.5",
+            "NEEDRESTART-KCUR: 5.15.0-1031-aws",
+            "NEEDRESTART-KEXP: 5.15.0-1031-aws",
+            "NEEDRESTART-KSTA: 1"
+        ]
+    }
+    
+    
+    root@master:~# ansible app -m apt -a "name=tree state=absent"
+    172.31.15.87 | CHANGED => {
+        "ansible_facts": {
+            "discovered_interpreter_python": "/usr/bin/python3"
+        },
+        "changed": true,
+        "stderr": "",
+        "stderr_lines": [],
+        "stdout": "Reading package lists...\nBuilding dependency tree...\nReading state information...\nThe following packages will be REMOVED:\n  tree\n0 upgraded, 0 newly installed, 1 to remove and 32 not upgraded.\nAfter this operation, 116 kB disk space will be freed.\n(Reading database ... \r(Reading database ... 5%\r(Reading database ... 10%\r(Reading database ... 15%\r(Reading database ... 20%\r(Reading database ... 25%\r(Reading database ... 30%\r(Reading database ... 35%\r(Reading database ... 40%\r(Reading database ... 45%\r(Reading database ... 50%\r(Reading database ... 55%\r(Reading database ... 60%\r(Reading database ... 65%\r(Reading database ... 70%\r(Reading database ... 75%\r(Reading database ... 80%\r(Reading database ... 85%\r(Reading database ... 90%\r(Reading database ... 95%\r(Reading database ... 100%\r(Reading database ... 104968 files and directories currently installed.)\r\nRemoving tree (2.0.2-1) ...\r\nProcessing triggers for man-db (2.10.2-1) ...\r\n",
+        "stdout_lines": [
+            "Reading package lists...",
+            "Building dependency tree...",
+            "Reading state information...",
+            "The following packages will be REMOVED:",
+            "  tree",
+            "0 upgraded, 0 newly installed, 1 to remove and 32 not upgraded.",
+            "After this operation, 116 kB disk space will be freed.",
+            "(Reading database ... ",
+            "(Reading database ... 5%",
+            "(Reading database ... 10%",
+            "(Reading database ... 15%",
+            "(Reading database ... 20%",
+            "(Reading database ... 25%",
+            "(Reading database ... 30%",
+            "(Reading database ... 35%",
+            "(Reading database ... 40%",
+            "(Reading database ... 45%",
+            "(Reading database ... 50%",
+            "(Reading database ... 55%",
+            "(Reading database ... 60%",
+            "(Reading database ... 65%",
+            "(Reading database ... 70%",
+            "(Reading database ... 75%",
+            "(Reading database ... 80%",
+            "(Reading database ... 85%",
+            "(Reading database ... 90%",
+            "(Reading database ... 95%",
+            "(Reading database ... 100%",
+            "(Reading database ... 104968 files and directories currently installed.)",
+            "Removing tree (2.0.2-1) ...",
+            "Processing triggers for man-db (2.10.2-1) ..."
+        ]
+    }
+    
+    
+
+
+
+
